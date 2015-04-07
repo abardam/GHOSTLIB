@@ -1,0 +1,24 @@
+#pragma once
+
+#include <recons_common.h>
+#include <cv_draw_common.h>
+
+//represents a single, processed frame
+struct FrameDataProcessed{
+	std::vector<CroppedMat> mBodyPartImages;
+	cv::Mat mCameraMatrix;
+	cv::Mat mCameraPose;
+	SkeletonNodeHard mRoot;
+
+	unsigned int mWidth, mHeight;
+
+	FrameDataProcessed(unsigned int num_bodyparts, unsigned int width, unsigned int height, const cv::Mat& camera_matrix, const cv::Mat& camera_pose, const SkeletonNodeHard& root):
+		mBodyPartImages(num_bodyparts),
+		mWidth(width),
+		mHeight(height),
+		mCameraMatrix(camera_matrix),
+		mCameraPose(camera_pose),
+		mRoot(root){}
+};
+
+void load_processed_frames(const std::vector<std::string>& filepaths, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds);
