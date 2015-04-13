@@ -24,6 +24,9 @@
     <ClCompile Include="gh_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gh_occlusion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gh_render.h">
@@ -33,6 +36,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gh_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gh_occlusion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -53,11 +53,20 @@ void load_processed_frames(const std::vector<std::string>& filepaths, unsigned i
 
 			fs.open(ss.str(), cv::FileStorage::READ);
 
+			if (!fs.isOpened()) continue;
+
 			CroppedMat cropped_mat;
 
 			fs["cropped_mat"] >> cropped_mat;
 
 			frameData.mBodyPartImages[bp] = cropped_mat;
+
+			if (cropped_mat.mMat.empty()){
+				frameData.mValidity[bp] = false;
+			}
+			else{
+				frameData.mValidity[bp] = true;
+			}
 		}
 
 		frameDataProcesseds.push_back(frameData);

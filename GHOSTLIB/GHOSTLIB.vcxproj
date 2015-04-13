@@ -91,11 +91,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="gh_common.cpp" />
+    <ClCompile Include="gh_occlusion.cpp" />
     <ClCompile Include="gh_render.cpp" />
     <ClCompile Include="gh_search.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gh_common.h" />
+    <ClInclude Include="gh_occlusion.h" />
     <ClInclude Include="gh_render.h" />
     <ClInclude Include="gh_search.h" />
   </ItemGroup>

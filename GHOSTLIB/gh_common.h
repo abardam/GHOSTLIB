@@ -6,6 +6,9 @@
 //represents a single, processed frame
 struct FrameDataProcessed{
 	std::vector<CroppedMat> mBodyPartImages;
+
+	std::vector<bool> mValidity; //basically whether we can use the body part images or not
+
 	cv::Mat mCameraMatrix;
 	cv::Mat mCameraPose;
 	SkeletonNodeHard mRoot;
@@ -14,6 +17,7 @@ struct FrameDataProcessed{
 
 	FrameDataProcessed(unsigned int num_bodyparts, unsigned int width, unsigned int height, const cv::Mat& camera_matrix, const cv::Mat& camera_pose, const SkeletonNodeHard& root):
 		mBodyPartImages(num_bodyparts),
+		mValidity(num_bodyparts),
 		mWidth(width),
 		mHeight(height),
 		mCameraMatrix(camera_matrix),
