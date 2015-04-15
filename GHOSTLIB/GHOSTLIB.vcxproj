@@ -83,7 +83,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PreBuildEvent>
-      <Command>copy /y "G:\Visual Studio 2013\GHOSTLIB\GHOSTLIB\*.h" "$(CODE_DIR)\GHOSTLIB-x86-vs12\include"</Command>
+      <Command>mkdir "$(CODE_DIR)\GHOSTLIB-x86-vs12\include" &amp; copy /y "$(ProjectDir)\*.h" "$(CODE_DIR)\GHOSTLIB-x86-vs12\include"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>copy header files to include directory</Message>
