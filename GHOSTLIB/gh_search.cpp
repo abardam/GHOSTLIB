@@ -14,7 +14,7 @@ void generate_score_vectors(const cv::Mat& mat, cv::Vec3f& x, cv::Vec3f& y, cv::
 	z = (mat(cv::Range(0, 3), cv::Range(2, 3)));
 	z = cv::normalize(x);
 }
-
+#if 0
 unsigned int find_best_frame_2(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<std::vector<int>>& frame_clusters){
 
 	bool clustered = !frame_clusters.empty();
@@ -36,7 +36,7 @@ unsigned int find_best_frame_2(const BodyPartDefinition& bpd, const cv::Mat& cmp
 
 		unsigned int frame = clustered&&!frame_clusters[i].empty() ? frame_clusters[i][0] : i;
 
-		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame])(cv::Range(0, 3), cv::Range(0, 3));
+		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], XXX)(cv::Range(0, 3), cv::Range(0, 3));
 
 		cv::Vec3f cand_x;
 		cv::Vec3f cand_y;
@@ -55,9 +55,9 @@ unsigned int find_best_frame_2(const BodyPartDefinition& bpd, const cv::Mat& cmp
 
 	return best_frame;
 }
+#endif
 
-
-unsigned int find_best_frame(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<std::vector<int>>& frame_clusters){
+unsigned int find_best_frame(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<std::vector<int>>& frame_clusters){
 	
 	bool clustered = !frame_clusters.empty();
 
@@ -75,7 +75,7 @@ unsigned int find_best_frame(const BodyPartDefinition& bpd, const cv::Mat& cmp_c
 
 		unsigned int frame = clustered&&!frame_clusters[i].empty()?frame_clusters[i][0]:i;
 
-		cv::Mat cand_pt = get_bodypart_transform(bpd, snhmaps[frame]).inv()* zero;
+		cv::Mat cand_pt = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose).inv()* zero;
 		cv::Vec4f cand_pt_v = cand_pt;
 		cand_pt_v(2) = 0;
 
@@ -96,7 +96,7 @@ struct CmpFrameScore{
 	}
 };
 
-std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<std::vector<int>>& frame_clusters){
+std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<std::vector<int>>& frame_clusters){
 
 	bool clustered = !frame_clusters.empty();
 
@@ -117,7 +117,7 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 
 		unsigned int frame = clustered&&!frame_clusters[i].empty() ? frame_clusters[i][0] : i;
 
-		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame])(cv::Range(0, 3), cv::Range(0, 3));
+		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
 
 		cv::Vec3f cand_x;
 		cv::Vec3f cand_y;
@@ -148,7 +148,7 @@ BodypartFrameCluster cluster_frames_2(unsigned int K, const BodyPartDefinitionVe
 	for (int i = 0; i < bpdv.size(); ++i){
 		std::vector<cv::Mat> camera_pose_clusters(K);
 		for (int j = 0; j < K; ++j){
-			camera_pose_clusters[j] = get_bodypart_transform(bpdv[i], snhmaps[j]);
+			camera_pose_clusters[j] = get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose);
 		}
 
 		std::vector<std::vector<int>> cluster_ownership(K);
@@ -174,7 +174,7 @@ BodypartFrameCluster cluster_frames_2(unsigned int K, const BodyPartDefinitionVe
 				cv::Vec3f cand_y;
 				cv::Vec3f cand_z;
 
-				cv::Mat cand_cam_pose = get_bodypart_transform(bpdv[i], snhmaps[frame]);
+				cv::Mat cand_cam_pose = get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose);
 
 				generate_score_vectors(cand_cam_pose, cand_x, cand_y, cand_z);
 
@@ -229,7 +229,7 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 	for (int i = 0; i < bpdv.size(); ++i){
 		std::vector<cv::Vec4f> camera_pose_clusters(K);
 		for (int j = 0; j < K; ++j){
-			cv::Mat temp = get_bodypart_transform(bpdv[i], snhmaps[j]).inv() * zero;
+			cv::Mat temp = get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose).inv() * zero;
 			camera_pose_clusters[j] = temp;
 			camera_pose_clusters[j](2) = 0; //zero the z
 		}
@@ -238,7 +238,7 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 		std::vector<cv::Vec4f> frame_sphere_pts(snhmaps.size());
 		for (int frame = 0; frame < snhmaps.size(); ++frame){
-			cv::Mat transform_inv = get_bodypart_transform(bpdv[i], snhmaps[frame]).inv();
+			cv::Mat transform_inv = get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose).inv();
 			cv::Mat temp = transform_inv * zero;
 			frame_sphere_pts[frame] = temp;
 			frame_sphere_pts[frame](2) = 0; //zero the z

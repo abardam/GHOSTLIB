@@ -15,16 +15,25 @@ void load_processed_frames(const std::vector<std::string>& filepaths, unsigned i
 		float win_width, win_height, fovy;
 		cv::Mat camera_extrinsic, camera_intrinsic;
 
-		fs["camera_intrinsic"]["width"] >> win_width;
-		fs["camera_intrinsic"]["height"] >> win_height;
-		fs["camera_intrinsic"]["fovy"] >> fovy;
+		if (fs["camera_intrinsic"].empty()){
+			fs["camera_intrinsic_mat"] >> camera_intrinsic;
+			cv::Mat color_tmp;
+			fs["color"] >> color_tmp;
+			win_width = color_tmp.cols;
+			win_height = color_tmp.rows;
+		}
+		else{
+			fs["camera_intrinsic"]["width"] >> win_width;
+			fs["camera_intrinsic"]["height"] >> win_height;
+			fs["camera_intrinsic"]["fovy"] >> fovy;
+			camera_intrinsic = generate_camera_intrinsic(win_width, win_height, fovy);
+		}
 
 		fs["camera_extrinsic"] >> camera_extrinsic;
 
 		SkeletonNodeHard root;
 		fs["skeleton"] >> root;
 
-		camera_intrinsic = generate_camera_intrinsic(win_width, win_height, fovy);
 		
 		FrameDataProcessed frameData(num_bodyparts, win_width, win_height, camera_intrinsic, camera_extrinsic, root);
 
