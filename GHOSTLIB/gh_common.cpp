@@ -1,7 +1,7 @@
 #include "gh_common.h"
 
 
-void load_processed_frames(const std::vector<std::string>& filepaths, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds){
+void load_processed_frames(const std::vector<std::string>& filepaths, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds, bool load_bg){
 
 	cv::FileStorage fs;
 
@@ -34,9 +34,11 @@ void load_processed_frames(const std::vector<std::string>& filepaths, unsigned i
 		SkeletonNodeHard root;
 		fs["skeleton"] >> root;
 
+		int facing;
+		fs["facing"] >> facing;
 		
 		FrameDataProcessed frameData(num_bodyparts, win_width, win_height, camera_intrinsic, camera_extrinsic, root);
-
+		frameData.mnFacing = facing;
 
 		fs.release();
 
@@ -76,6 +78,22 @@ void load_processed_frames(const std::vector<std::string>& filepaths, unsigned i
 			else{
 				frameData.mValidity[bp] = true;
 			}
+		}
+
+		if(load_bg){
+			ss.str("");
+			ss << path << "\\background_" << "frame" << frame << ".xml.gz";
+
+			fs.open(ss.str(), cv::FileStorage::READ);
+
+			if (!fs.isOpened()) continue;
+
+			cv::Mat bg_mat;
+
+			fs["mat"] >> bg_mat;
+
+			frameData.mBackgroundImage = bg_mat;
+
 		}
 
 		frameDataProcesseds.push_back(frameData);

@@ -6,6 +6,7 @@
 
 void process_and_save_occlusions(const cv::Mat& render_pretexture,
 	const cv::Mat& render_depth, int anim_frame,
-	const BodyPartDefinitionVector& bpdv,
-	const std::vector<FrameData>& frame_datas,
+	const BodyPartDefinitionVector& bpdv, const cv::Vec3b& bg_color,
+	const cv::Mat& frame_color, const cv::Mat& frame_fullcolor,
+	const int& frame_facing,
 	const std::string& video_directory);

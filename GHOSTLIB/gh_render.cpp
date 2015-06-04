@@ -10,6 +10,8 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 	cv::Mat& neutral_pts_occluded, std::vector<cv::Point2i>& _2d_points_occluded,
 	bool debug){
 
+	bool alpha_channel = output_img.channels() == 4;
+
 	//cv::Mat neutral_transform = source_camerapose.inv() * source_cameramatrix.inv();
 
 	cv::Mat reprojected_pts = target_cameramatrix * target_camerapose * neutral_pts; //neutral_transform * _2d_pointmat_multiplied_by_depth_but_not_yet_inv_camera_matrix;
@@ -29,23 +31,33 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 		int repro_x = reprojected_pts.ptr<float>(0)[j];
 		int repro_y = reprojected_pts.ptr<float>(1)[j];
 
-		if (CLAMP(repro_x, repro_y, output_img.cols, output_img.rows) && CLAMP(orig_x, orig_y, target_img.cols, target_img.rows)){
+		if (CLAMP(repro_x, repro_y, target_img.cols, target_img.rows) && CLAMP(orig_x, orig_y, output_img.cols, output_img.rows)){
 			cv::Vec3b color = target_img.ptr<cv::Vec3b>(repro_y)[repro_x];
 
 			if (debug){
 				debug_img.ptr<cv::Vec3b>(repro_y)[repro_x] = cv::Vec3b(0xff, 0xff, 0);
 				cv::imshow("debug image", debug_img);
 				cv::imshow("output", output_img);
-				cv::waitKey(1);
+				char q = cv::waitKey(1);
+				if (q == 'q') debug = false;
 			}
 
-			if (color == cv::Vec3b(0xff, 0, 0)){
+			//if (color == cv::Vec3b(0xff, 0, 0) || color == cv::Vec3b(0xff,0xff,0xff){
+			if (color(0) == 0xff){
 				cv::Vec4f pt = neutral_pts.col(j);
 				neutral_pts_occluded_v.push_back(pt);
 				_2d_points_occluded.push_back(_2d_points[j]);
 			}
 			else{
-				output_img.ptr < cv::Vec3b >(orig_y)[orig_x] = color;
+				if (alpha_channel){
+					output_img.ptr<cv::Vec4b>(orig_y)[orig_x](0) = color(0);
+					output_img.ptr<cv::Vec4b>(orig_y)[orig_x](1) = color(1);
+					output_img.ptr<cv::Vec4b>(orig_y)[orig_x](2) = color(2);
+					output_img.ptr<cv::Vec4b>(orig_y)[orig_x](3) = 0xff;
+				}
+				else{
+					output_img.ptr<cv::Vec3b>(orig_y)[orig_x] = color;
+				}
 			}
 		}
 	}

@@ -96,17 +96,22 @@ struct CmpFrameScore{
 	}
 };
 
+//this is what we are using currently
 std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<std::vector<int>>& frame_clusters){
 
 	bool clustered = !frame_clusters.empty();
 
 	const cv::Mat& cmp_rot_only = cmp_camerapose(cv::Range(0, 3), cv::Range(0, 3));
 
-	cv::Vec3f cmp_x;
-	cv::Vec3f cmp_y;
-	cv::Vec3f cmp_z;
+	//cv::Vec3f cmp_x;
+	//cv::Vec3f cmp_y;
+	//cv::Vec3f cmp_z;
+	//
+	//generate_score_vectors(cmp_camerapose, cmp_x, cmp_y, cmp_z);
 
-	generate_score_vectors(cmp_camerapose, cmp_x, cmp_y, cmp_z);
+	cv::Vec3f cmp_rot_vec;
+
+	cv::Rodrigues(cmp_rot_only, cmp_rot_vec);
 
 	std::priority_queue<std::pair<unsigned int, float>, std::vector<std::pair<unsigned int, float>>, CmpFrameScore> frame_pqueue;
 
@@ -114,19 +119,25 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 	int num_frames = clustered ? frame_clusters.size() : snhmaps.size();
 
 	for (int i = 0; i < num_frames; ++i){
-
 		unsigned int frame = clustered&&!frame_clusters[i].empty() ? frame_clusters[i][0] : i;
+
+		if (framedatas_processed[frame].mnFacing == FACING_SIDE) continue;
 
 		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
 
-		cv::Vec3f cand_x;
-		cv::Vec3f cand_y;
-		cv::Vec3f cand_z;
+		//cv::Vec3f cand_x;
+		//cv::Vec3f cand_y;
+		//cv::Vec3f cand_z;
+		//
+		//generate_score_vectors(cand_rot_only, cand_x, cand_y, cand_z);
+		//
+		////float score = cv::norm(cmp_x - cand_x) + cv::norm(cmp_y - cand_y) + cv::norm(cmp_z - cand_z);
+		//float score = calculate_score(cmp_x, cmp_y, cmp_z, cand_x, cand_y, cand_z);
 
-		generate_score_vectors(cand_rot_only, cand_x, cand_y, cand_z);
+		cv::Vec3f cand_rot_vec;
+		cv::Rodrigues(cand_rot_only, cand_rot_vec);
 
-		//float score = cv::norm(cmp_x - cand_x) + cv::norm(cmp_y - cand_y) + cv::norm(cmp_z - cand_z);
-		float score = calculate_score(cmp_x, cmp_y, cmp_z, cand_x, cand_y, cand_z);
+		float score = cv::norm(cmp_rot_vec - cand_rot_vec);
 
 		frame_pqueue.push(std::pair<unsigned int, float>(i, score));
 	}

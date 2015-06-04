@@ -13,7 +13,11 @@ struct FrameDataProcessed{
 	cv::Mat mCameraPose;
 	SkeletonNodeHard mRoot;
 
+	int mnFacing;
+
 	unsigned int mWidth, mHeight;
+
+	cv::Mat mBackgroundImage;
 
 	FrameDataProcessed(unsigned int num_bodyparts, unsigned int width, unsigned int height, const cv::Mat& camera_matrix, const cv::Mat& camera_pose, const SkeletonNodeHard& root):
 		mBodyPartImages(num_bodyparts),
@@ -25,4 +29,4 @@ struct FrameDataProcessed{
 		mRoot(root){}
 };
 
-void load_processed_frames(const std::vector<std::string>& filepaths, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds);
+void load_processed_frames(const std::vector<std::string>& filepaths, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds, bool load_bg);

@@ -2,10 +2,11 @@
 #include <cv_draw_common.h>
 
 
-void process_and_save_occlusions(const cv::Mat& render_pretexture, 
-	const cv::Mat& render_depth, int anim_frame, 
-	const BodyPartDefinitionVector& bpdv, 
-	const std::vector<FrameData>& frame_datas, 
+void process_and_save_occlusions(const cv::Mat& render_pretexture,
+	const cv::Mat& render_depth, int anim_frame,
+	const BodyPartDefinitionVector& bpdv, const cv::Vec3b& bg_color,
+	const cv::Mat& frame_color, const cv::Mat& frame_fullcolor,
+	const int& frame_facing,
 	const std::string& video_directory){
 
 	unsigned int win_width = render_pretexture.cols;
@@ -16,6 +17,7 @@ void process_and_save_occlusions(const cv::Mat& render_pretexture,
 	std::vector<std::vector<cv::Point2i>> bodypart_pts_2d_v(bpdv.size());
 
 	std::vector<std::vector<cv::Point2i>> nonbodypart_pts_2d_v(bpdv.size());
+	std::vector<cv::Point2i> bg_pts_2d_v(bpdv.size());
 
 	for (int y = 0; y < win_height; ++y){
 		for (int x = 0; x < win_width; ++x){
@@ -46,6 +48,9 @@ void process_and_save_occlusions(const cv::Mat& render_pretexture,
 					nonbodypart_pts_2d_v[i].push_back(cv::Point2i(x, y));
 				}
 			}
+			else{
+				bg_pts_2d_v.push_back(cv::Point2i(x, y));
+			}
 		}
 	}
 
@@ -70,7 +75,7 @@ void process_and_save_occlusions(const cv::Mat& render_pretexture,
 			int x = bodypart_pts_2d_v[i][j].x;
 			int y = bodypart_pts_2d_v[i][j].y;
 
-			bodypart_image.ptr<cv::Vec3b>(y)[x] = frame_datas[anim_frame].mmColor.ptr<cv::Vec3b>(y)[x];
+			bodypart_image.ptr<cv::Vec3b>(y)[x] = frame_color.ptr<cv::Vec3b>(y)[x];
 		}
 
 		filename_ss.str("");
@@ -80,8 +85,30 @@ void process_and_save_occlusions(const cv::Mat& render_pretexture,
 		fs.open(filename_ss.str(), cv::FileStorage::WRITE);
 
 		fs << "bodypart" << i << "frame" << anim_frame << "cropped_mat" << crop_mat(bodypart_image, crop_colors);
+		fs << "facing" << frame_facing;
 
 		fs.release();
 	}
+
+	cv::Mat bg_image(win_height, win_width, CV_8UC3, cv::Scalar(0xff, 0xff, 0xff));
+	for (int i = 0; i < bg_pts_2d_v.size(); ++i){
+		int x = bg_pts_2d_v[i].x;
+		int y = bg_pts_2d_v[i].y;
+
+		bg_image.ptr<cv::Vec3b>(y)[x] = frame_fullcolor.ptr<cv::Vec3b>(y)[x];
+
+	}
+
+
+	filename_ss.str("");
+	filename_ss << video_directory << "\\background_" << "frame" << anim_frame << ".xml.gz";
+
+	cv::FileStorage fs;
+	fs.open(filename_ss.str(), cv::FileStorage::WRITE);
+
+	fs << "frame" << anim_frame << "mat" << bg_image;
+	fs << "facing" << frame_facing;
+
+	fs.release();
 }
 
