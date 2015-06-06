@@ -97,17 +97,12 @@ struct CmpFrameScore{
 };
 
 //this is what we are using currently
-std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<std::vector<int>>& frame_clusters){
+std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<cv::Vec3f> precalculated_vecs, const std::vector<std::vector<int>>& frame_clusters){
 
 	bool clustered = !frame_clusters.empty();
 
 	const cv::Mat& cmp_rot_only = cmp_camerapose(cv::Range(0, 3), cv::Range(0, 3));
 
-	//cv::Vec3f cmp_x;
-	//cv::Vec3f cmp_y;
-	//cv::Vec3f cmp_z;
-	//
-	//generate_score_vectors(cmp_camerapose, cmp_x, cmp_y, cmp_z);
 
 	cv::Vec3f cmp_rot_vec;
 
@@ -123,23 +118,15 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 
 		if (framedatas_processed[frame].mnFacing == FACING_SIDE) continue;
 
-		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
-
-		//cv::Vec3f cand_x;
-		//cv::Vec3f cand_y;
-		//cv::Vec3f cand_z;
-		//
-		//generate_score_vectors(cand_rot_only, cand_x, cand_y, cand_z);
-		//
-		////float score = cv::norm(cmp_x - cand_x) + cv::norm(cmp_y - cand_y) + cv::norm(cmp_z - cand_z);
-		//float score = calculate_score(cmp_x, cmp_y, cmp_z, cand_x, cand_y, cand_z);
+		//const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
 
 		cv::Vec3f cand_rot_vec;
-		cv::Rodrigues(cand_rot_only, cand_rot_vec);
+		//cv::Rodrigues(cand_rot_only, cand_rot_vec); //precalculate
+		cand_rot_vec = precalculated_vecs[frame];
 
-		float score = cv::norm(cmp_rot_vec - cand_rot_vec);
+		float score = cv::normL2Sqr<float,float>((&cmp_rot_vec[0]), (&cand_rot_vec[0]), 3);
 
-		frame_pqueue.push(std::pair<unsigned int, float>(i, score));
+		frame_pqueue.push(std::pair<unsigned int, float>(frame, score));
 	}
 
 	std::vector<unsigned int> frame_v(frame_pqueue.size());
@@ -150,6 +137,17 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 	}
 
 	return frame_v;
+}
+
+std::vector<cv::Vec3f> precalculate_vecs(const BodyPartDefinition& bpd, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed){
+	std::vector<cv::Vec3f> precalculated_vecs(snhmaps.size());
+	for (int frame = 0; frame < snhmaps.size(); ++frame){
+		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
+		cv::Vec3f cand_rot_vec;
+		cv::Rodrigues(cand_rot_only, cand_rot_vec);
+		precalculated_vecs[frame] = cand_rot_vec;
+	}
+	return precalculated_vecs;
 }
 
 BodypartFrameCluster cluster_frames_2(unsigned int K, const BodyPartDefinitionVector& bpdv, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& frame_data_processed, unsigned int max_iterations){
@@ -315,6 +313,35 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 		}
 
 		bodypart_cluster_ownership[i] = cluster_ownership;
+	}
+
+	return bodypart_cluster_ownership;
+}
+
+BodypartFrameCluster cluster_frames_keyframes(int frame_gap, const BodyPartDefinitionVector& bpdv, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& frame_data_processed){
+
+	BodypartFrameCluster bodypart_cluster_ownership(bpdv.size());
+
+
+	for (int i = 0; i < bpdv.size(); ++i){
+		int frame_counter = 0;
+		for (int j = 0; j < snhmaps.size(); ++j){
+			if (frame_counter >= frame_gap || 
+				(j>0 && frame_data_processed[j].mnFacing != frame_data_processed[j-1].mnFacing)){
+
+				if (frame_data_processed[j].mValidity[i]){
+
+					bodypart_cluster_ownership[i].push_back(std::vector<int>());
+					bodypart_cluster_ownership[i].back().push_back(j);
+					frame_counter = 0;
+				}
+				else{
+					frame_counter = frame_gap;
+				}
+
+			}
+			++frame_counter;
+		}
 	}
 
 	return bodypart_cluster_ownership;
