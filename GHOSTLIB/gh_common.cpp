@@ -1,7 +1,7 @@
 #include "gh_common.h"
 
 
-void load_processed_frames(const std::vector<std::string>& filepaths, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds, bool load_bg){
+void load_processed_frames(const std::vector<std::string>& filepaths, const std::string& extension, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds, bool load_bg){
 
 	cv::FileStorage fs;
 
@@ -60,7 +60,7 @@ void load_processed_frames(const std::vector<std::string>& filepaths, unsigned i
 
 		for (int bp = 0; bp < num_bodyparts; ++bp){
 			ss.str("");
-			ss << path << "\\bodypart" << bp << "frame" << frame << ".xml.gz";
+			ss << path << "\\bodypart" << bp << "frame" << frame << extension;
 
 			fs.open(ss.str(), cv::FileStorage::READ);
 
@@ -82,7 +82,7 @@ void load_processed_frames(const std::vector<std::string>& filepaths, unsigned i
 
 		if(load_bg){
 			ss.str("");
-			ss << path << "\\background_" << "frame" << frame << ".xml.gz";
+			ss << path << "\\background_" << "frame" << frame << extension;
 
 			fs.open(ss.str(), cv::FileStorage::READ);
 

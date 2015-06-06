@@ -6,7 +6,8 @@
 void inverse_point_mapping(const cv::Mat& neutral_pts,
 	const std::vector<cv::Point2i> _2d_points,
 	const cv::Mat& target_cameramatrix, const cv::Mat& target_camerapose,
-	const cv::Mat& target_img, cv::Mat& output_img,
+	const cv::Mat& target_img,
+	cv::Point2i offset, cv::Mat& output_img,
 	cv::Mat& neutral_pts_occluded, std::vector<cv::Point2i>& _2d_points_occluded,
 	bool debug){
 
@@ -28,8 +29,8 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 	for (int j = 0; j < reprojected_pts.cols; ++j){
 		int orig_x = _2d_points[j].x;
 		int orig_y = _2d_points[j].y;
-		int repro_x = reprojected_pts.ptr<float>(0)[j];
-		int repro_y = reprojected_pts.ptr<float>(1)[j];
+		int repro_x = reprojected_pts.ptr<float>(0)[j] - offset.x;
+		int repro_y = reprojected_pts.ptr<float>(1)[j] - offset.y;
 
 		if (CLAMP(repro_x, repro_y, target_img.cols, target_img.rows) && CLAMP(orig_x, orig_y, output_img.cols, output_img.rows)){
 			cv::Vec3b color = target_img.ptr<cv::Vec3b>(repro_y)[repro_x];
@@ -44,8 +45,7 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 
 			//if (color == cv::Vec3b(0xff, 0, 0) || color == cv::Vec3b(0xff,0xff,0xff){
 			if (color(0) == 0xff){
-				cv::Vec4f pt = neutral_pts.col(j);
-				neutral_pts_occluded_v.push_back(pt);
+				neutral_pts_occluded_v.push_back(neutral_pts.col(j));
 				_2d_points_occluded.push_back(_2d_points[j]);
 			}
 			else{
