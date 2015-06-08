@@ -91,12 +91,15 @@ void process_and_save_occlusions(const cv::Mat& render_pretexture,
 	}
 
 	cv::Mat bg_image(win_height, win_width, CV_8UC3, cv::Scalar(0xff, 0xff, 0xff));
-	for (int i = 0; i < bg_pts_2d_v.size(); ++i){
-		int x = bg_pts_2d_v[i].x;
-		int y = bg_pts_2d_v[i].y;
 
-		bg_image.ptr<cv::Vec3b>(y)[x] = frame_fullcolor.ptr<cv::Vec3b>(y)[x];
+	if (!frame_fullcolor.empty()){
+		for (int i = 0; i < bg_pts_2d_v.size(); ++i){
+			int x = bg_pts_2d_v[i].x;
+			int y = bg_pts_2d_v[i].y;
 
+			bg_image.ptr<cv::Vec3b>(y)[x] = frame_fullcolor.ptr<cv::Vec3b>(y)[x];
+
+		}
 	}
 
 
