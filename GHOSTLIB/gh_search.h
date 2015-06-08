@@ -1,7 +1,7 @@
 #pragma once
 
 #include <opencv2\opencv.hpp>
-#include <AssimpCV.h>
+#include <cv_skeleton.h>
 #include "gh_common.h"
 
 typedef std::vector<std::vector<std::vector<int>>> BodypartFrameCluster;
