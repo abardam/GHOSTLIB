@@ -1,7 +1,7 @@
 #pragma once
 
-#include <recons_common.h>
 #include <cv_draw_common.h>
+#include <cv_skeleton.h>
 
 //represents a single, processed frame
 struct FrameDataProcessed{

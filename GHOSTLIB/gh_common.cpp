@@ -1,4 +1,5 @@
 #include "gh_common.h"
+#include <recons_common.h>
 
 
 void load_processed_frames(const std::vector<std::string>& filepaths, const std::string& extension, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds, bool load_bg){

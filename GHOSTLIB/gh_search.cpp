@@ -108,6 +108,8 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 
 	cv::Rodrigues(cmp_rot_only, cmp_rot_vec);
 
+	cmp_rot_vec(2) = 2;
+
 	std::priority_queue<std::pair<unsigned int, float>, std::vector<std::pair<unsigned int, float>>, CmpFrameScore> frame_pqueue;
 
 
@@ -145,6 +147,7 @@ std::vector<cv::Vec3f> precalculate_vecs(const BodyPartDefinition& bpd, const st
 		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
 		cv::Vec3f cand_rot_vec;
 		cv::Rodrigues(cand_rot_only, cand_rot_vec);
+		cand_rot_vec(2) = 0;
 		precalculated_vecs[frame] = cand_rot_vec;
 	}
 	return precalculated_vecs;
@@ -238,7 +241,8 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 	for (int i = 0; i < bpdv.size(); ++i){
 		std::vector<cv::Vec4f> camera_pose_clusters(K);
 		for (int j = 0; j < K; ++j){
-			cv::Mat temp = get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose).inv() * zero;
+			cv::Mat temp(4, 1, CV_32F);
+			temp = get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose).inv() * zero;
 			camera_pose_clusters[j] = temp;
 			camera_pose_clusters[j](2) = 0; //zero the z
 		}
