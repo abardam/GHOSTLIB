@@ -108,8 +108,6 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 
 	cv::Rodrigues(cmp_rot_only, cmp_rot_vec);
 
-	cmp_rot_vec(2) = 2;
-
 	std::priority_queue<std::pair<unsigned int, float>, std::vector<std::pair<unsigned int, float>>, CmpFrameScore> frame_pqueue;
 
 
@@ -147,7 +145,6 @@ std::vector<cv::Vec3f> precalculate_vecs(const BodyPartDefinition& bpd, const st
 		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
 		cv::Vec3f cand_rot_vec;
 		cv::Rodrigues(cand_rot_only, cand_rot_vec);
-		cand_rot_vec(2) = 0;
 		precalculated_vecs[frame] = cand_rot_vec;
 	}
 	return precalculated_vecs;
@@ -236,25 +233,24 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 	if (K > snhmaps.size()) K = snhmaps.size();
 	BodypartFrameCluster bodypart_cluster_ownership(bpdv.size());
 
-	cv::Mat zero = cv::Mat(cv::Vec4f(0, 0, 0, 1));
+	cv::Range rotation_range[2];
+	rotation_range[0] = rotation_range[1] = cv::Range(0, 3);
 
 	for (int i = 0; i < bpdv.size(); ++i){
-		std::vector<cv::Vec4f> camera_pose_clusters(K);
+		std::vector<cv::Vec3f> camera_pose_clusters(K);
 		for (int j = 0; j < K; ++j){
-			cv::Mat temp(4, 1, CV_32F);
-			temp = get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose).inv() * zero;
+			cv::Vec3f temp;
+			cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose), temp);
 			camera_pose_clusters[j] = temp;
-			camera_pose_clusters[j](2) = 0; //zero the z
 		}
 
 		std::vector<std::vector<int>> cluster_ownership(K);
 
-		std::vector<cv::Vec4f> frame_sphere_pts(snhmaps.size());
+		std::vector<cv::Vec3f> frame_sphere_pts(snhmaps.size());
 		for (int frame = 0; frame < snhmaps.size(); ++frame){
-			cv::Mat transform_inv = get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose).inv();
-			cv::Mat temp = transform_inv * zero;
+			cv::Vec3f temp;
+			cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose), temp);
 			frame_sphere_pts[frame] = temp;
-			frame_sphere_pts[frame](2) = 0; //zero the z
 		}
 
 
@@ -266,10 +262,10 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 			cluster_ownership.clear();
 			cluster_ownership.resize(K);
-			std::vector<cv::Vec4f> cluster_center(K);
+			std::vector<cv::Vec3f> cluster_center(K);
 
 			for (int k = 0; k < K; ++k){
-				cluster_center[k] = cv::Vec4f(0,0,0,0);
+				cluster_center[k] = cv::Vec3f(0,0,0);
 			}
 
 			//assign frames to clusters
