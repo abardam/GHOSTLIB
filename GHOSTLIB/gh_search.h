@@ -4,6 +4,8 @@
 #include <cv_skeleton.h>
 #include "gh_common.h"
 
+#define TEXTURE_VALID_PIXEL_THRESHOLD 10
+
 typedef std::vector<std::vector<std::vector<int>>> BodypartFrameCluster;
 
 unsigned int find_best_frame(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<std::vector<int>>& frame_clusters);

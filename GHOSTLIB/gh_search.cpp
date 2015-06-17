@@ -228,6 +228,18 @@ BodypartFrameCluster cluster_frames_2(unsigned int K, const BodyPartDefinitionVe
 	return bodypart_cluster_ownership;
 }
 
+bool check_validity(const FrameDataProcessed& frame_data, int bodypart){
+
+	const cv::Mat& tex = frame_data.mBodyPartImages[bodypart].mMat;
+	int num_pixels = 0;
+	for (int y = 0; y<tex.rows; ++y){
+		for (int x = 0; x<tex.cols; ++x){
+			if (tex.ptr<cv::Vec3b>(y)[x](0) != 0xff) ++num_pixels;
+		}
+	}
+
+	return ((num_pixels + 0.0f) > TEXTURE_VALID_PIXEL_THRESHOLD);
+}
 
 BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVector& bpdv, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& frame_data_processed, unsigned int max_iterations){
 	if (K > snhmaps.size()) K = snhmaps.size();
@@ -240,17 +252,19 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 		std::vector<cv::Vec3f> camera_pose_clusters(K);
 		for (int j = 0; j < K; ++j){
 			cv::Vec3f temp;
-			cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose), temp);
+			cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose)(rotation_range), temp);
 			camera_pose_clusters[j] = temp;
 		}
 
 		std::vector<std::vector<int>> cluster_ownership(K);
+		std::vector<bool> validity(snhmaps.size());
 
 		std::vector<cv::Vec3f> frame_sphere_pts(snhmaps.size());
 		for (int frame = 0; frame < snhmaps.size(); ++frame){
 			cv::Vec3f temp;
-			cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose), temp);
+			cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose)(rotation_range), temp);
 			frame_sphere_pts[frame] = temp;
+			validity[frame] = check_validity(frame_data_processed[frame], i);
 		}
 
 
@@ -271,7 +285,7 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 			//assign frames to clusters
 			for (int frame = 0; frame < snhmaps.size(); ++frame){
 
-				if (!frame_data_processed[frame].mValidity[i]) continue;
+				if (!frame_data_processed[frame].mValidity[i] || !validity[frame]) continue;
 
 				unsigned int best_cluster = K;
 				float best_score;
