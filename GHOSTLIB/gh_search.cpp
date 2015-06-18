@@ -326,6 +326,29 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 		}
 
+		//set 0 to the one closest to the center
+		for (int j = 0; j < cluster_ownership.size(); ++j){
+			cv::Vec3f center(0, 0, 0);
+			for (int k = 0; k < cluster_ownership[j].size(); ++k){
+				center += frame_sphere_pts[cluster_ownership[j][k]];
+			}
+			center /= (cluster_ownership[j].size() + 0.0f);
+			int closest_frame_index=-1;
+			float closest_distance;
+			for (int k = 0; k < cluster_ownership[j].size(); ++k){
+				float distance = cv::norm(frame_sphere_pts[cluster_ownership[j][k]] - center);
+				if (closest_frame_index == -1 || closest_distance > distance){
+					closest_distance = distance;
+					closest_frame_index = k;
+				}
+			}
+			if (closest_frame_index != -1){
+				int temp_frame = cluster_ownership[j][0];
+				cluster_ownership[j][0] = cluster_ownership[j][closest_frame_index];
+				cluster_ownership[j][closest_frame_index] = temp_frame;
+			}
+		}
+
 		bodypart_cluster_ownership[i] = cluster_ownership;
 	}
 
