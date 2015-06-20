@@ -102,11 +102,14 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 	bool clustered = !frame_clusters.empty();
 
 	const cv::Mat& cmp_rot_only = cmp_camerapose(cv::Range(0, 3), cv::Range(0, 3));
+	cv::Mat front_vec(cv::Vec3f(0, 0, 1));
 
+	//cv::Vec3f cmp_rot_vec;
+	//cv::Rodrigues(cmp_rot_only, cmp_rot_vec);
 
-	cv::Vec3f cmp_rot_vec;
-
-	cv::Rodrigues(cmp_rot_only, cmp_rot_vec);
+	cv::Mat cmp_rot_front_mat = cmp_rot_only * front_vec;
+	cv::Vec3f cmp_rot_front = cmp_rot_front_mat;
+	cmp_rot_front = cv::normalize(cmp_rot_front);
 
 	std::priority_queue<std::pair<unsigned int, float>, std::vector<std::pair<unsigned int, float>>, CmpFrameScore> frame_pqueue;
 
@@ -124,7 +127,9 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 		//cv::Rodrigues(cand_rot_only, cand_rot_vec); //precalculate
 		cand_rot_vec = precalculated_vecs[frame];
 
-		float score = cv::normL2Sqr<float,float>((&cmp_rot_vec[0]), (&cand_rot_vec[0]), 3);
+		//float score = cv::normL2Sqr<float,float>((&cmp_rot_vec[0]), (&cand_rot_vec[0]), 3);
+
+		float score = acos(cmp_rot_front.dot(cand_rot_vec));
 
 		frame_pqueue.push(std::pair<unsigned int, float>(frame, score));
 	}
@@ -141,11 +146,17 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 
 std::vector<cv::Vec3f> precalculate_vecs(const BodyPartDefinition& bpd, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed){
 	std::vector<cv::Vec3f> precalculated_vecs(snhmaps.size());
+
+	cv::Mat front_vec(cv::Vec3f(0, 0, 1));
+
 	for (int frame = 0; frame < snhmaps.size(); ++frame){
 		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
-		cv::Vec3f cand_rot_vec;
-		cv::Rodrigues(cand_rot_only, cand_rot_vec);
-		precalculated_vecs[frame] = cand_rot_vec;
+		//cv::Vec3f cand_rot_vec;
+		//cv::Rodrigues(cand_rot_only, cand_rot_vec);
+
+		cv::Mat cand_rot_mul = cand_rot_only * front_vec;
+		precalculated_vecs[frame] = cand_rot_mul;
+		precalculated_vecs[frame] = cv::normalize(precalculated_vecs[frame]);
 	}
 	return precalculated_vecs;
 }
@@ -245,15 +256,20 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 	if (K > snhmaps.size()) K = snhmaps.size();
 	BodypartFrameCluster bodypart_cluster_ownership(bpdv.size());
 
+	cv::Mat front_vec(cv::Vec3f(0, 0, 1));
+
 	cv::Range rotation_range[2];
 	rotation_range[0] = rotation_range[1] = cv::Range(0, 3);
 
 	for (int i = 0; i < bpdv.size(); ++i){
 		std::vector<cv::Vec3f> camera_pose_clusters(K);
 		for (int j = 0; j < K; ++j){
-			cv::Vec3f temp;
-			cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose)(rotation_range), temp);
+			//cv::Vec3f temp;
+			//cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose)(rotation_range), temp);
+
+			cv::Mat temp = get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose)(rotation_range)* front_vec;
 			camera_pose_clusters[j] = temp;
+			camera_pose_clusters[j] = cv::normalize(camera_pose_clusters[j]);
 		}
 
 		std::vector<std::vector<int>> cluster_ownership(K);
@@ -261,9 +277,13 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 		std::vector<cv::Vec3f> frame_sphere_pts(snhmaps.size());
 		for (int frame = 0; frame < snhmaps.size(); ++frame){
-			cv::Vec3f temp;
-			cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose)(rotation_range), temp);
+			//cv::Vec3f temp;
+			//cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose)(rotation_range), temp);
+
+			cv::Mat temp = get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose)(rotation_range)* front_vec;
 			frame_sphere_pts[frame] = temp;
+			frame_sphere_pts[frame] = cv::normalize(frame_sphere_pts[frame]);
+
 			validity[frame] = check_validity(frame_data_processed[frame], i);
 		}
 
@@ -292,7 +312,8 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 				for (int cluster = 0; cluster < K; ++cluster){
 
-					float score = cv::norm(camera_pose_clusters[cluster] - frame_sphere_pts[frame]);
+					//float score = cv::norm(camera_pose_clusters[cluster] - frame_sphere_pts[frame]);
+					float score = acos(camera_pose_clusters[cluster].dot(frame_sphere_pts[frame]));
 
 					if (best_cluster == K || score < best_score){
 						best_cluster = cluster;

@@ -19,4 +19,5 @@ void process_and_save_occlusions_expanded(const cv::Mat& render_pretexture,
 	const BodyPartDefinitionVector& bpdv, const cv::Vec3b& bg_color,
 	const cv::Mat& frame_color, const cv::Mat& frame_fullcolor,
 	const int& frame_facing,
-	const std::string& video_directory);
+	const std::string& video_directory,
+	const std::vector<bool>& validity = std::vector<bool>());

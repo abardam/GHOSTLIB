@@ -123,7 +123,8 @@ void process_and_save_occlusions_expanded(const cv::Mat& render_pretexture,
 	const BodyPartDefinitionVector& bpdv, const cv::Vec3b& bg_color,
 	const cv::Mat& frame_color, const cv::Mat& frame_fullcolor,
 	const int& frame_facing,
-	const std::string& video_directory){
+	const std::string& video_directory,
+	const std::vector<bool>& validity){
 
 	unsigned int win_width = render_pretexture.cols;
 	unsigned int win_height = render_pretexture.rows;
@@ -194,7 +195,13 @@ void process_and_save_occlusions_expanded(const cv::Mat& render_pretexture,
 			int x = bodypart_pts_2d_v[i][j].x;
 			int y = bodypart_pts_2d_v[i][j].y;
 
-			bodypart_image.ptr<cv::Vec3b>(y)[x] = frame_color.ptr<cv::Vec3b>(y)[x];
+
+			if (validity.empty() || validity[i]){
+				bodypart_image.ptr<cv::Vec3b>(y)[x] = frame_color.ptr<cv::Vec3b>(y)[x];
+			}
+			else{
+				bodypart_image.ptr<cv::Vec3b>(y)[x] = cv::Vec3b(0xff, 0, 0);
+			}
 		}
 
 		filename_ss.str("");
