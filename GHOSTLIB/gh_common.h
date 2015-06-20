@@ -2,6 +2,9 @@
 
 #include <cv_draw_common.h>
 #include <cv_skeleton.h>
+#include <recons_voxel.h>
+
+typedef std::vector<std::vector<std::vector<int>>> BodypartFrameCluster;
 
 //represents a single, processed frame
 struct FrameDataProcessed{
@@ -30,3 +33,11 @@ struct FrameDataProcessed{
 };
 
 void load_processed_frames(const std::vector<std::string>& filepaths, const std::string& extension, unsigned int num_bodyparts, std::vector<FrameDataProcessed>& frameDataProcesseds, bool load_bg);
+
+void load_packaged_file(std::string filename,
+	BodyPartDefinitionVector& bpdv,
+	std::vector<FrameDataProcessed>& frame_datas,
+	BodypartFrameCluster& bodypart_frame_cluster,
+	std::vector<std::vector<float>>& triangle_vertices,
+	std::vector<std::vector<unsigned int>>& triangle_indices,
+	std::vector<VoxelMatrix>& voxels, float& voxel_size);

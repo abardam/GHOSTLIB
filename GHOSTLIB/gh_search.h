@@ -6,7 +6,6 @@
 
 #define TEXTURE_VALID_PIXEL_THRESHOLD 10
 
-typedef std::vector<std::vector<std::vector<int>>> BodypartFrameCluster;
 
 unsigned int find_best_frame(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<std::vector<int>>& frame_clusters);
 std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<cv::Vec3f> precalculated_vecs, const std::vector<std::vector<int>>& frame_clusters = std::vector<std::vector<int>>());
