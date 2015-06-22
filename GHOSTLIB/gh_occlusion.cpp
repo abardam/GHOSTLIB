@@ -126,6 +126,11 @@ void process_and_save_occlusions_expanded(const cv::Mat& render_pretexture,
 	const std::string& video_directory,
 	const std::vector<bool>& validity){
 
+	if (frame_color.empty()){
+		std::cout << "frame " << anim_frame << " empty" << std::endl;
+		return;
+	}
+
 	unsigned int win_width = render_pretexture.cols;
 	unsigned int win_height = render_pretexture.rows;
 
