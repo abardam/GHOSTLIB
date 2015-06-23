@@ -2,6 +2,19 @@
 
 #include "gh_search.h"
 
+#define DIST_ROTATION 1
+#define DIST_ZCMP 2
+
+#define TEXTURE_DIST DIST_ROTATION
+
+#define ROTATION_MAGNITUDE_THRESHOLD 0.01
+
+float rotation_magnitude(const cv::Mat& rot){
+	cv::Vec3f rod;
+	cv::Rodrigues(rot, rod);
+	return rod(0)*rod(0) + rod(1)*rod(1) + rod(2)*rod(2);
+}
+
 float calculate_score(cv::Vec3f a_x, cv::Vec3f a_y, cv::Vec3f a_z, cv::Vec3f b_x, cv::Vec3f b_y, cv::Vec3f b_z){
 	return cv::norm(a_x - b_x) + cv::norm(a_y - b_y) + cv::norm(a_z - b_z);
 }
@@ -121,15 +134,18 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 
 		if (framedatas_processed[frame].mnFacing == FACING_SIDE) continue;
 
-		//const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
+		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
 
+#if TEXTURE_DIST == DIST_ROTATION
+		cv::Mat cmp_cand = cmp_rot_only * cand_rot_only.t();
+		float score = rotation_magnitude(cmp_cand);
+#elif TEXTURE_DIST == DIST_ZCMP
 		cv::Vec3f cand_rot_vec;
-		//cv::Rodrigues(cand_rot_only, cand_rot_vec); //precalculate
 		cand_rot_vec = precalculated_vecs[frame];
 
-		//float score = cv::normL2Sqr<float,float>((&cmp_rot_vec[0]), (&cand_rot_vec[0]), 3);
-
 		float score = acos(cmp_rot_front.dot(cand_rot_vec));
+#endif
+		//float score = cv::normL2Sqr<float,float>((&cmp_rot_vec[0]), (&cand_rot_vec[0]), 3);
 
 		frame_pqueue.push(std::pair<unsigned int, float>(frame, score));
 	}
@@ -256,6 +272,12 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 	if (K > snhmaps.size()) K = snhmaps.size();
 	BodypartFrameCluster bodypart_cluster_ownership(bpdv.size());
 
+	cv::Range rotation_range[2];
+	rotation_range[0] = cv::Range(0,3);
+	rotation_range[1] = cv::Range(0,3);
+
+#if TEXTURE_DIST == DIST_ZCMP
+
 	cv::Mat front_vec(cv::Vec3f(0, 0, 1));
 
 	cv::Range rotation_range[2];
@@ -263,6 +285,7 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 	for (int i = 0; i < bpdv.size(); ++i){
 		std::vector<cv::Vec3f> camera_pose_clusters(K);
+
 		for (int j = 0; j < K; ++j){
 			//cv::Vec3f temp;
 			//cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[j], frame_data_processed[j].mCameraPose)(rotation_range), temp);
@@ -276,6 +299,7 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 		std::vector<bool> validity(snhmaps.size());
 
 		std::vector<cv::Vec3f> frame_sphere_pts(snhmaps.size());
+
 		for (int frame = 0; frame < snhmaps.size(); ++frame){
 			//cv::Vec3f temp;
 			//cv::Rodrigues(get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose)(rotation_range), temp);
@@ -283,7 +307,6 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 			cv::Mat temp = get_bodypart_transform(bpdv[i], snhmaps[frame], frame_data_processed[frame].mCameraPose)(rotation_range)* front_vec;
 			frame_sphere_pts[frame] = temp;
 			frame_sphere_pts[frame] = cv::normalize(frame_sphere_pts[frame]);
-
 			validity[frame] = check_validity(frame_data_processed[frame], i);
 		}
 
@@ -296,6 +319,7 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 			cluster_ownership.clear();
 			cluster_ownership.resize(K);
+
 			std::vector<cv::Vec3f> cluster_center(K);
 
 			for (int k = 0; k < K; ++k){
@@ -314,6 +338,7 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 					//float score = cv::norm(camera_pose_clusters[cluster] - frame_sphere_pts[frame]);
 					float score = acos(camera_pose_clusters[cluster].dot(frame_sphere_pts[frame]));
+					//float score = rotation_magnitude(camera_pose_clusters[cluster] * frame_sphere_pts[frame].t());
 
 					if (best_cluster == K || score < best_score){
 						best_cluster = cluster;
@@ -327,14 +352,14 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 			}
 
 			for (int cluster = 0; cluster < K; ++cluster){
-
+			
 				double num_frames_in_cluster = cluster_ownership[cluster].size();
 				//average each cluster center
 				cluster_center[cluster] = cluster_center[cluster] / (num_frames_in_cluster!=0?num_frames_in_cluster:1);
-
+			
 				//take the difference
 				total_cluster_movement += cv::norm(cluster_center[cluster] - camera_pose_clusters[cluster]);
-
+			
 				//then assign
 				camera_pose_clusters[cluster] = cluster_center[cluster];
 			}
@@ -349,6 +374,7 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 		//set 0 to the one closest to the center
 		for (int j = 0; j < cluster_ownership.size(); ++j){
+
 			cv::Vec3f center(0, 0, 0);
 			for (int k = 0; k < cluster_ownership[j].size(); ++k){
 				center += frame_sphere_pts[cluster_ownership[j][k]];
@@ -368,10 +394,98 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 				cluster_ownership[j][0] = cluster_ownership[j][closest_frame_index];
 				cluster_ownership[j][closest_frame_index] = temp_frame;
 			}
+
 		}
 
 		bodypart_cluster_ownership[i] = cluster_ownership;
 	}
+#elif TEXTURE_DIST == DIST_ROTATION
+	for (int bp = 0; bp < bpdv.size(); ++bp){
+		for (int frame = 0; frame < snhmaps.size(); ++frame){
+			if (bodypart_cluster_ownership[bp].empty()){
+				//i.e. if this is the first frame
+
+				//we'll make a new cluster
+				bodypart_cluster_ownership[bp].push_back(std::vector<int>());
+				
+				//and put this frame as the base
+				bodypart_cluster_ownership[bp].back().push_back(frame);
+			}
+			else{
+				//otherwise, lets check the bases and get the lowest theta
+
+				int closest_cluster = -1;
+				float lowest_difference;
+
+				const cv::Mat& transform = get_bodypart_transform(bpdv[bp], snhmaps[frame], cv::Mat::eye(4, 4, CV_32F))(rotation_range);
+
+				for (int cluster = 0; cluster < bodypart_cluster_ownership[bp].size(); ++cluster){
+					//check the difference in magnitude of this base from the guy
+
+					int cand_frame = bodypart_cluster_ownership[bp][cluster][0];
+
+					const cv::Mat& cand_transform = get_bodypart_transform(bpdv[bp], snhmaps[cand_frame], cv::Mat::eye(4, 4, CV_32F))(rotation_range);
+
+					float difference = rotation_magnitude(transform * cand_transform.t());
+
+					if (closest_cluster == -1 || lowest_difference > difference){
+						lowest_difference = difference;
+						closest_cluster = cluster;
+					}
+				}
+
+				//now lets check if it's below the threshold
+				if (lowest_difference < ROTATION_MAGNITUDE_THRESHOLD){
+					//if it is, add it to the cluster
+
+					bodypart_cluster_ownership[bp][closest_cluster].push_back(frame);
+
+					//now recalculate the base
+
+					int cluster_base = -1;
+					float ssd;
+					for (int frame_in_cluster = 0; frame_in_cluster < bodypart_cluster_ownership[bp][closest_cluster].size(); ++frame_in_cluster){
+						//calculate the difference in magnitude of this frame from all the others
+
+						const cv::Mat& transform = get_bodypart_transform(bpdv[bp], snhmaps[bodypart_cluster_ownership[bp][closest_cluster][frame_in_cluster]], cv::Mat::eye(4, 4, CV_32F))(rotation_range);
+
+						float ssd_cand = 0;
+						for (int frame_in_cluster2 = 0; frame_in_cluster2 < bodypart_cluster_ownership[bp][closest_cluster].size(); ++frame_in_cluster2){
+
+							const cv::Mat& transform2 = get_bodypart_transform(bpdv[bp], snhmaps[bodypart_cluster_ownership[bp][closest_cluster][frame_in_cluster2]], cv::Mat::eye(4, 4, CV_32F))(rotation_range);
+							float diff = rotation_magnitude(transform * transform2.t());
+							ssd_cand += diff*diff;
+						}
+
+						if (cluster_base == -1 || ssd > ssd_cand){
+							cluster_base = frame_in_cluster;
+							ssd = ssd_cand;
+						}
+					}
+
+					//swap base positions
+
+					int old_base_frame = bodypart_cluster_ownership[bp][closest_cluster][0];
+					bodypart_cluster_ownership[bp][closest_cluster][0] = bodypart_cluster_ownership[bp][closest_cluster][cluster_base];
+					bodypart_cluster_ownership[bp][closest_cluster][cluster_base] = old_base_frame;
+				}
+				else{
+					//if it's not, create a new cluster
+
+					//we'll make a new cluster
+					bodypart_cluster_ownership[bp].push_back(std::vector<int>());
+
+					//and put this frame as the base
+					bodypart_cluster_ownership[bp].back().push_back(frame);
+				}
+			}
+		}
+
+		std::cout << "bodypart " << bp << ": " << bodypart_cluster_ownership[bp].size() << " clusters created\n";
+
+	}
+#endif
+
 
 	return bodypart_cluster_ownership;
 }

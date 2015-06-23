@@ -3,6 +3,8 @@
 
 #include "gh_render.h"
 
+#define TRY_RENDER_WHITE 1
+
 void inverse_point_mapping(const cv::Mat& neutral_pts,
 	const std::vector<cv::Point2i> _2d_points,
 	const cv::Mat& target_cameramatrix, const cv::Mat& target_camerapose,
@@ -43,11 +45,15 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 				if (q == 'q') debug = false;
 			}
 
-			//if (color == cv::Vec3b(0xff, 0, 0) || color == cv::Vec3b(0xff,0xff,0xff){
-			if (color(0) == 0xff){
+#if TRY_RENDER_WHITE
+			if (color == cv::Vec3b(0xff, 0, 0) || color == cv::Vec3b(0xff,0xff,0xff)){
+#else
+			if (color == cv::Vec3b(0xff, 0, 0)){
+#endif
 				neutral_pts_occluded_v.push_back(neutral_pts.col(j));
 				_2d_points_occluded.push_back(_2d_points[j]);
 			}
+			else if (color == cv::Vec3b(0xff, 0xff, 0xff)){}
 			else{
 				if (alpha_channel){
 					output_img.ptr<cv::Vec4b>(orig_y)[orig_x](0) = color(0);
