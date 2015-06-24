@@ -62,20 +62,39 @@ void process_and_save_occlusions(const cv::Mat& render_pretexture,
 	crop_colors.push_back(cv::Vec3b(0xff, 0xff, 0xff));
 	//crop_colors.push_back(cv::Vec3b(0xff, 0, 0));
 
+	cv::Mat element = cv::getStructuringElement(cv::MORPH_CROSS,
+		cv::Size(3,3),
+		cv::Point(1, 1));
+
+
 	for (int i = 0; i < bpdv.size(); ++i){
 		cv::Mat bodypart_image(win_height, win_width, CV_8UC3, cv::Scalar(0xff, 0xff, 0xff));
+
+		cv::Mat white_mask(win_height, win_width, CV_8U, cv::Scalar(0xff));
 
 		for (int j = 0; j < nonbodypart_pts_2d_v[i].size(); ++j){
 			int x = nonbodypart_pts_2d_v[i][j].x;
 			int y = nonbodypart_pts_2d_v[i][j].y;
 
 			bodypart_image.ptr<cv::Vec3b>(y)[x] = cv::Vec3b(0xff, 0, 0);
+			white_mask.ptr<unsigned char>(y)[x] = 0;
 		}
 		for (int j = 0; j < bodypart_pts_2d_v[i].size(); ++j){
 			int x = bodypart_pts_2d_v[i][j].x;
 			int y = bodypart_pts_2d_v[i][j].y;
 
 			bodypart_image.ptr<cv::Vec3b>(y)[x] = frame_color.ptr<cv::Vec3b>(y)[x];
+			white_mask.ptr<unsigned char>(y)[x] = 0;
+		}
+
+		cv::Mat whiter_mask;
+		cv::dilate(white_mask, whiter_mask, element);
+		for (int j = 0; j < bodypart_image.rows * bodypart_image.cols; ++j){
+			if (whiter_mask.ptr<unsigned char>()[j] == 0xff){
+				if (bodypart_image.ptr<cv::Vec3b>()[j] != cv::Vec3b(0xff, 0, 0)){
+					bodypart_image.ptr<cv::Vec3b>()[j] = cv::Vec3f(0xff, 0xff, 0xff);
+				}
+			}
 		}
 
 		filename_ss.str("");
@@ -187,14 +206,20 @@ void process_and_save_occlusions_expanded(const cv::Mat& render_pretexture,
 	crop_colors.push_back(cv::Vec3b(0xff, 0xff, 0xff));
 	//crop_colors.push_back(cv::Vec3b(0xff, 0, 0));
 
+	cv::Mat element = cv::getStructuringElement(cv::MORPH_CROSS,
+		cv::Size(5, 5),
+		cv::Point(2, 2));
+
 	for (int i = 0; i < bpdv.size(); ++i){
 		cv::Mat bodypart_image(win_height, win_width, CV_8UC3, cv::Scalar(0xff, 0xff, 0xff));
+		cv::Mat white_mask(win_height, win_width, CV_8U, cv::Scalar(0xff));
 
 		for (int j = 0; j < nonbodypart_pts_2d_v[i].size(); ++j){
 			int x = nonbodypart_pts_2d_v[i][j].x;
 			int y = nonbodypart_pts_2d_v[i][j].y;
 
 			bodypart_image.ptr<cv::Vec3b>(y)[x] = cv::Vec3b(0xff, 0, 0);
+			white_mask.ptr<unsigned char>(y)[x] = 0;
 		}
 		for (int j = 0; j < bodypart_pts_2d_v[i].size(); ++j){
 			int x = bodypart_pts_2d_v[i][j].x;
@@ -206,6 +231,18 @@ void process_and_save_occlusions_expanded(const cv::Mat& render_pretexture,
 			}
 			else{
 				bodypart_image.ptr<cv::Vec3b>(y)[x] = cv::Vec3b(0xff, 0, 0);
+			}
+			white_mask.ptr<unsigned char>(y)[x] = 0;
+		}
+
+
+		cv::Mat whiter_mask;
+		cv::dilate(white_mask, whiter_mask, element);
+		for (int j = 0; j < bodypart_image.rows * bodypart_image.cols; ++j){
+			if (whiter_mask.ptr<unsigned char>()[j] == 0xff){
+				if (bodypart_image.ptr<cv::Vec3b>()[j] != cv::Vec3b(0xff, 0, 0)){
+					bodypart_image.ptr<cv::Vec3b>()[j] = cv::Vec3f(0xff, 0xff, 0xff);
+				}
 			}
 		}
 

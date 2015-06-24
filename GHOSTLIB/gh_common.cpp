@@ -108,7 +108,8 @@ void load_packaged_file(std::string filename,
 	BodypartFrameCluster& bodypart_frame_cluster,
 	std::vector<std::vector<float>>& triangle_vertices,
 	std::vector<std::vector<unsigned int>>& triangle_indices,
-	std::vector<VoxelMatrix>& voxels, float& voxel_size){
+	std::vector<VoxelMatrix>& voxels, float& voxel_size,
+	std::vector<Cylinder>& cylinders){
 
 	int win_width, win_height;
 
@@ -210,9 +211,19 @@ void load_packaged_file(std::string filename,
 
 	savefile["voxel_size"] >> voxel_size;
 
+	cv::FileNode cylNode = savefile["cylinders"];
+	cylinders.clear();
+	for (auto it = cylNode.begin(); it != cylNode.end(); ++it){
+		float width, height;
+		(*it)["width"] >> width;
+		(*it)["height"] >> height;
+		cylinders.push_back(Cylinder(width, height));
+	}
+
 	savefile.release();
 
 	frame_datas[0].mWidth = win_width;
 	frame_datas[0].mHeight = win_height;
+
 }
 
