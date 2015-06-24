@@ -3,6 +3,7 @@
 #include <cv_draw_common.h>
 #include <cv_skeleton.h>
 #include <recons_voxel.h>
+#include <recons_cylinder.h>
 
 typedef std::vector<std::vector<std::vector<int>>> BodypartFrameCluster;
 
@@ -40,4 +41,5 @@ void load_packaged_file(std::string filename,
 	BodypartFrameCluster& bodypart_frame_cluster,
 	std::vector<std::vector<float>>& triangle_vertices,
 	std::vector<std::vector<unsigned int>>& triangle_indices,
-	std::vector<VoxelMatrix>& voxels, float& voxel_size);
+	std::vector<VoxelMatrix>& voxels, float& voxel_size,
+	std::vector<Cylinder>& cylinders);
