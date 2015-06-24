@@ -280,8 +280,6 @@ BodypartFrameCluster cluster_frames(unsigned int K, const BodyPartDefinitionVect
 
 	cv::Mat front_vec(cv::Vec3f(0, 0, 1));
 
-	cv::Range rotation_range[2];
-	rotation_range[0] = rotation_range[1] = cv::Range(0, 3);
 
 	for (int i = 0; i < bpdv.size(); ++i){
 		std::vector<cv::Vec3f> camera_pose_clusters(K);
