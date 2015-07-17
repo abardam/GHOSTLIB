@@ -98,12 +98,14 @@
     <ClCompile Include="gh_occlusion.cpp" />
     <ClCompile Include="gh_render.cpp" />
     <ClCompile Include="gh_search.cpp" />
+    <ClCompile Include="gh_texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gh_common.h" />
     <ClInclude Include="gh_occlusion.h" />
     <ClInclude Include="gh_render.h" />
     <ClInclude Include="gh_search.h" />
+    <ClInclude Include="gh_texture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
