@@ -116,6 +116,9 @@ void load_packaged_file(std::string filename,
 	cv::FileStorage savefile;
 	savefile.open(filename, cv::FileStorage::READ);
 
+	savefile["width"] >> win_width;
+	savefile["height"] >> win_height;
+
 	cv::FileNode bpdNode = savefile["bodypartdefinitions"];
 	bpdv.clear();
 	for (auto it = bpdNode.begin(); it != bpdNode.end(); ++it)
@@ -161,12 +164,13 @@ void load_packaged_file(std::string filename,
 				(*it2)["image_offset"] >> image.mOffset;
 				(*it2)["image_size"] >> image.mSize;
 
-				win_width = image.mSize.width;
-				win_height = image.mSize.height;
 			}
 			else{
 				(*it2)["image"] >> image;
 			}
+
+			win_width = image.mSize.width;
+			win_height = image.mSize.height;
 
 			frame_datas[main_frame].mBodyPartImages.resize(bpdv.size());
 			frame_datas[main_frame].mBodyPartImages[bodypart] = image;
