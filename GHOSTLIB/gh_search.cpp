@@ -70,6 +70,27 @@ unsigned int find_best_frame_2(const BodyPartDefinition& bpd, const cv::Mat& cmp
 }
 #endif
 
+typedef std::pair<std::string, int> BodyPartFrame;
+typedef std::map<BodyPartFrame, cv::Mat> BodyPartFrameTransformMap;
+typedef std::pair<BodyPartFrame, cv::Mat> BodyPartFrameTransformEntry;
+
+BodyPartFrameTransformMap bodypart_frame_transform_map;
+
+cv::Mat get_bodypart_transform_saveframe(const BodyPartDefinition& bpd, int frame, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed){
+	BodyPartFrame bpf(bpd.mBodyPartName, frame);
+
+	BodyPartFrameTransformMap::iterator it = bodypart_frame_transform_map.find(bpf);
+
+	if (it == bodypart_frame_transform_map.end()){
+		cv::Mat transform = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose).inv();
+		bodypart_frame_transform_map.insert(BodyPartFrameTransformEntry( bpf, transform));
+		return transform;
+	}
+	else{
+		return it->second;
+	}
+}
+
 unsigned int find_best_frame(const BodyPartDefinition& bpd, const cv::Mat& cmp_camerapose, const std::vector<SkeletonNodeHardMap>& snhmaps, const std::vector<FrameDataProcessed>& framedatas_processed, const std::vector<std::vector<int>>& frame_clusters){
 	
 	bool clustered = !frame_clusters.empty();
@@ -88,7 +109,8 @@ unsigned int find_best_frame(const BodyPartDefinition& bpd, const cv::Mat& cmp_c
 
 		unsigned int frame = clustered&&!frame_clusters[i].empty()?frame_clusters[i][0]:i;
 
-		cv::Mat cand_pt = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose).inv()* zero;
+		//cv::Mat cand_pt = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose).inv()* zero;
+		cv::Mat cand_pt = get_bodypart_transform_saveframe(bpd, frame, snhmaps, framedatas_processed).inv()* zero;
 		cv::Vec4f cand_pt_v = cand_pt;
 		cand_pt_v(2) = 0;
 
@@ -134,7 +156,8 @@ std::vector<unsigned int> sort_best_frames(const BodyPartDefinition& bpd, const 
 
 		if (framedatas_processed[frame].mnFacing == FACING_SIDE) continue;
 
-		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
+		const cv::Mat& cand_rot_only = get_bodypart_transform_saveframe(bpd, frame, snhmaps, framedatas_processed)(cv::Range(0, 3), cv::Range(0, 3));
+		//const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
 
 #if TEXTURE_DIST == DIST_ROTATION
 		cv::Mat cmp_cand = cmp_rot_only * cand_rot_only.t();
@@ -166,7 +189,8 @@ std::vector<cv::Vec3f> precalculate_vecs(const BodyPartDefinition& bpd, const st
 	cv::Mat front_vec(cv::Vec3f(0, 0, 1));
 
 	for (int frame = 0; frame < snhmaps.size(); ++frame){
-		const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
+		const cv::Mat& cand_rot_only = get_bodypart_transform_saveframe(bpd, frame, snhmaps, framedatas_processed)(cv::Range(0, 3), cv::Range(0, 3));
+		//const cv::Mat& cand_rot_only = get_bodypart_transform(bpd, snhmaps[frame], framedatas_processed[frame].mCameraPose)(cv::Range(0, 3), cv::Range(0, 3));
 		//cv::Vec3f cand_rot_vec;
 		//cv::Rodrigues(cand_rot_only, cand_rot_vec);
 

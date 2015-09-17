@@ -41,6 +41,13 @@ void load_processed_frames(const std::vector<std::string>& filepaths, const std:
 		FrameDataProcessed frameData(num_bodyparts, win_width, win_height, camera_intrinsic, camera_extrinsic, root);
 		frameData.mnFacing = facing;
 
+		cv::Mat full_body_image;
+		fs["color"] >> full_body_image;
+		std::vector<cv::Vec3b> crop_colors;
+		crop_colors.push_back(cv::Vec3b(0xff, 0xff, 0xff));
+		
+		frameData.mBodyImage = crop_mat(full_body_image, crop_colors);
+
 		fs.release();
 
 		//find the frame number
@@ -140,6 +147,14 @@ void load_packaged_file(std::string filename,
 		(*it)["facing"] >> facing;
 		FrameDataProcessed frame_data(bpdv.size(), 0, 0, camera_matrix, camera_pose, root);
 		frame_data.mnFacing = facing;
+
+		std::string body_image_path;
+		(*it)["body_image_path"] >> body_image_path;
+		frame_data.mBodyImage.mMat = cv::imread(body_image_path);
+		(*it)["body_image_offset"] >> frame_data.mBodyImage.mOffset;
+		(*it)["body_image_size"] >> frame_data.mBodyImage.mSize;
+
+
 		frame_datas.push_back(frame_data);
 	}
 

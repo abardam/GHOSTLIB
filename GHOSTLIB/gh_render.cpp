@@ -24,8 +24,10 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 		debug_img = target_img.clone();
 	}
 
-	std::vector<cv::Vec4f> neutral_pts_occluded_v;
-	neutral_pts_occluded_v.reserve(reprojected_pts.cols);
+	//std::vector<cv::Vec4f> neutral_pts_occluded_v;
+	//neutral_pts_occluded_v.reserve(reprojected_pts.cols);
+
+	neutral_pts_occluded.create(4, reprojected_pts.cols, CV_32F);
 
 
 	if (try_render_white){
@@ -47,7 +49,13 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 				}
 
 				if (color == cv::Vec3b(0xff, 0, 0) || color == cv::Vec3b(0xff,0xff,0xff)){
-					neutral_pts_occluded_v.push_back(neutral_pts.col(j));
+					//neutral_pts_occluded_v.push_back(neutral_pts.col(j));
+					int i = _2d_points_occluded.size();
+					neutral_pts_occluded.ptr<float>(0)[i] = neutral_pts.ptr<float>(0)[j];
+					neutral_pts_occluded.ptr<float>(1)[i] = neutral_pts.ptr<float>(1)[j];
+					neutral_pts_occluded.ptr<float>(2)[i] = neutral_pts.ptr<float>(2)[j];
+					neutral_pts_occluded.ptr<float>(3)[i] = neutral_pts.ptr<float>(3)[j];
+
 					_2d_points_occluded.push_back(_2d_points[j]);
 				}
 				else if (color == cv::Vec3b(0xff, 0xff, 0xff)){}
@@ -84,7 +92,14 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 				}
 
 				if (color == cv::Vec3b(0xff, 0, 0)){
-					neutral_pts_occluded_v.push_back(neutral_pts.col(j));
+					//neutral_pts_occluded_v.push_back(neutral_pts.col(j));
+
+					int i = _2d_points_occluded.size();
+					neutral_pts_occluded.ptr<float>(0)[i] = neutral_pts.ptr<float>(0)[j];
+					neutral_pts_occluded.ptr<float>(1)[i] = neutral_pts.ptr<float>(1)[j];
+					neutral_pts_occluded.ptr<float>(2)[i] = neutral_pts.ptr<float>(2)[j];
+					neutral_pts_occluded.ptr<float>(3)[i] = neutral_pts.ptr<float>(3)[j];
+
 					_2d_points_occluded.push_back(_2d_points[j]);
 				}
 				else if (color == cv::Vec3b(0xff, 0xff, 0xff)){}
@@ -103,6 +118,6 @@ void inverse_point_mapping(const cv::Mat& neutral_pts,
 		}
 	}
 
-	neutral_pts_occluded = pointvec_to_pointmat(neutral_pts_occluded_v);
+	//neutral_pts_occluded = pointvec_to_pointmat(neutral_pts_occluded_v);
 }
 

@@ -10,6 +10,7 @@ typedef std::vector<std::vector<std::vector<int>>> BodypartFrameCluster;
 //represents a single, processed frame
 struct FrameDataProcessed{
 	std::vector<CroppedMat> mBodyPartImages;
+	CroppedMat mBodyImage;
 
 	std::vector<bool> mValidity; //basically whether we can use the body part images or not
 
