@@ -118,6 +118,13 @@ void load_packaged_file(std::string filename,
 	std::vector<VoxelMatrix>& voxels, float& voxel_size,
 	std::vector<Cylinder>& cylinders){
 
+
+	std::string path;
+	{
+		unsigned int startpos = filename.find_last_of("/\\") + 1;
+		path = filename.substr(0, startpos);
+	}
+
 	int win_width, win_height;
 
 	cv::FileStorage savefile;
@@ -150,7 +157,7 @@ void load_packaged_file(std::string filename,
 
 		std::string body_image_path;
 		(*it)["body_image_path"] >> body_image_path;
-		frame_data.mBodyImage.mMat = cv::imread(body_image_path);
+		frame_data.mBodyImage.mMat = cv::imread(path + "/" + body_image_path);
 		(*it)["body_image_offset"] >> frame_data.mBodyImage.mOffset;
 		(*it)["body_image_size"] >> frame_data.mBodyImage.mSize;
 
@@ -173,7 +180,7 @@ void load_packaged_file(std::string filename,
 			if ((*it2)["image"].empty()){
 				std::string image_path;
 				(*it2)["image_path"] >> image_path;
-				image.mMat = cv::imread(image_path);
+				image.mMat = cv::imread(path + "/" + image_path);
 
 				if (image.mMat.empty()) continue;
 				(*it2)["image_offset"] >> image.mOffset;
